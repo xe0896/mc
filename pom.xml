@@ -60,6 +60,14 @@
             <artifactId>lwjgl-opengl</artifactId>
             <classifier>${lwjgl.natives}</classifier>
         </dependency>
+
+        <!-- JOML: Java math library for vectors & matrices (Matrix4f, Vector3f).
+             Pure Java, no natives needed. -->
+        <dependency>
+            <groupId>org.joml</groupId>
+            <artifactId>joml</artifactId>
+            <version>1.10.8</version>
+        </dependency>
     </dependencies>
 
     <build>
