@@ -2,7 +2,8 @@ package com.voxel;
 
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
-import org.joml.*;
+import org.joml.Vector3f;
+import org.joml.Matrix4f;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -10,18 +11,22 @@ import java.nio.IntBuffer;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL11.GL_UNSIGNED_INT;
 import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
 import static org.lwjgl.opengl.GL11.glDrawElements;
+import static org.lwjgl.opengl.GL11.glEnable;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
-
 import com.voxel.Shader;
+import com.voxel.enums.BlockType;
+import com.voxel.Chunk;
+import com.voxel.Camera;
 
 public class Main {
     // The window "handle" GLFW gives us a long id, not an object. Flyweight-ish:
@@ -30,6 +35,7 @@ public class Main {
     private Window window;
     private Shader shader;
     private Mesh mesh;
+    private Camera camera;
 
     public void run() {
         init(1280, 720);
@@ -117,6 +123,7 @@ public class Main {
 
         this.shader = new Shader(vertexShaderSource, fragmentShaderSource, this.window);
         this.mesh = new Mesh(vertices, indices);
+        this.camera = new Camera(shader.shaderId);
 
         glfwShowWindow(window.window);
     }
@@ -128,24 +135,106 @@ public class Main {
         // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); wireframe mode
         glEnable(GL_DEPTH_TEST);
 
+
+        float deltaTime = 0.0f;
+        float lastFrame = 0.0f;
+
+        glfwSetCursorPosCallback(window.window, (window, xPos, yPos) -> {
+            if (camera.firstMouse) {
+                camera.lastX = (float) xPos;
+                camera.lastY = (float) yPos;
+                camera.firstMouse = false;
+            }
+            float xoffset = (float) xPos - camera.lastX;
+            float yoffset = camera.lastY - (float) yPos;
+
+            camera.lastX = (float) xPos;
+            camera.lastY = (float) yPos;
+
+            xoffset *= camera.sensitivity;  
+            yoffset *= camera.sensitivity;
+
+            camera.pitch += yoffset;
+            camera.yaw += xoffset;
+
+            if(camera.pitch > 89.0f) {
+                camera.pitch = 89.0f;
+            }
+            if(camera.pitch < -89.0f) {
+                camera.pitch = -89.0f;
+            }
+
+            Vector3f newTarget = new Vector3f();
+            float length = (float) Math.cos(Math.toRadians(camera.pitch));
+
+            newTarget.x = (float) Math.cos(Math.toRadians(camera.yaw)) * length;
+            newTarget.y = (float) Math.sin(Math.toRadians(camera.pitch));
+            newTarget.z = (float) Math.sin(Math.toRadians(camera.yaw)) * length;
+            newTarget.normalize();
+            camera.target = newTarget;
+        });  
+
+        glfwSetInputMode(window.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
+        
         // Game loop
         while (!glfwWindowShouldClose(window.window)) {
             // Game logic goes here later (ticks, physics, chunks).
             // for now just wipe the screen to the clear color.
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glUseProgram(shader.shaderId);
+
              // The time is the angle
-            Matrix4f transform = new Matrix4f().rotate((float) glfwGetTime(),0.5f, 1, 0);
-            try(var stack = stackPush()) {
-                FloatBuffer buf = stack.mallocFloat(16);
-                transform.get(buf);
-                glUniformMatrix4fv(shader.model, false, buf);
+            float time = (float) glfwGetTime();
+
+            // deltaTime would be the time for one frame, so for a high FPS monitor like 144fps vs 60fps
+            // 1/60 = 0.0167 and 1/144 = 0.00694 then cameraPos doing * 5 would make each 0.0835 and 0.0347 
+            // respectively then for a 60fps monitor it would do this 60 times a second so 0.0835 x 60 = 5
+            // and for a 144fps monitor it would do this 144 times a second so 0.0347x144 = 5, so its all equal
+            deltaTime = time - lastFrame;
+            lastFrame = time;
+
+            // FMA is doing camera.cameraPos += (deltaTime * camera.cameraSpeed) * camera.target;
+            // this = this + a * b;
+            if (glfwGetKey(window.window, GLFW_KEY_W) == GLFW_PRESS) {
+                camera.cameraPos.fma(deltaTime * camera.cameraSpeed, camera.target);
+            }
+            if (glfwGetKey(window.window, GLFW_KEY_S) == GLFW_PRESS) {
+                camera.cameraPos.fma(-(deltaTime * camera.cameraSpeed), camera.target);
+            }
+            if (glfwGetKey(window.window, GLFW_KEY_D) == GLFW_PRESS) {
+                Vector3f target = new Vector3f(camera.target);
+                Vector3f up = new Vector3f(camera.up);
+                Vector3f cross = target.cross(up);
+                cross.normalize();
+                camera.cameraPos.fma(deltaTime * camera.cameraSpeed, cross);
+            }
+
+            if (glfwGetKey(window.window, GLFW_KEY_A) == GLFW_PRESS) {
+                Vector3f target = new Vector3f(camera.target);
+                Vector3f up = new Vector3f(camera.up);
+                Vector3f cross = target.cross(up);
+                cross.normalize();
+                camera.cameraPos.fma(-(deltaTime * camera.cameraSpeed), cross);
             }
 
             glBindVertexArray(mesh.VAO);
             // glDrawArrays(GL_TRIANGLES, 0, 3); // Says to draw 3 veritices, independent from a vertex having 3 positions
-            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+            
+            for(int x = 0; x < chunk.W; x++) {
+                for(int y = 0; y < chunk.H; y++) {
+                    for(int z = 0; z < chunk.W; z++) {
+                        if(chunk.getBlock(x, y, z) == BlockType.STONE) {
+                            Vector3f position = new Vector3f(x, y, z);
+                            //Matrix4f model = new Matrix4f().translate(position).rotate(time, 0.5f, 1, 0);
+                            Matrix4f model = new Matrix4f().translate(position);
+                            Shader.setMatrix4(shader.model, model);
+                            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+                        }
+                    }
+                }
+            }
 
+            camera.moveCamera(time);
         
             // Swap the buffer we drew to onto the screen (double buffering)
             glfwSwapBuffers(window.window);

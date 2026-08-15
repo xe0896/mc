@@ -9,6 +9,7 @@ import com.voxel.Window;
 import java.nio.FloatBuffer;
 
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 public class Shader {
     public int shaderId;
@@ -46,13 +47,11 @@ public class Shader {
 
         glUseProgram(shaderId); // Apply the view and projection, must set the shader
 
-        Matrix4f viewTransform = new Matrix4f().translate(0, 0, -10);
-        setMatrix4("view", viewTransform);
         // 45 degrees is the FOV
         // 0.1f is chosen as the near plane as zero would explode due to dividing by 0, 
         // causing us to make the view move the objects a few units back
         Matrix4f projectionTransform = new Matrix4f().perspective((float) Math.toRadians(45), (float) window.width/window.height, 0.1f, 100.0f);
-        setMatrix4("projection", projectionTransform);
+        setMatrix4(glGetUniformLocation(shaderId, "projection"), projectionTransform);
 
         int successShaderLink = glGetProgrami(shaderId, GL_LINK_STATUS);
         if(successShaderLink == 0) {
@@ -64,8 +63,8 @@ public class Shader {
         glDeleteShader(fragmentShader);
     }
 
-    public void setMatrix4(String name, Matrix4f matrix) {
-        int location = glGetUniformLocation(shaderId, name);
+    public static void setMatrix4(int location, Matrix4f matrix) {
+        //int location = glGetUniformLocation(shaderId, name);
         try (var stack = stackPush()) {
             FloatBuffer buf = stack.mallocFloat(16);
             matrix.get(buf);
