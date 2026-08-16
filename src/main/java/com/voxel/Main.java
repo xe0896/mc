@@ -16,17 +16,21 @@ import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL11.GL_UNSIGNED_INT;
 import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
+import static org.lwjgl.opengl.GL11.glDrawArrays;
 import static org.lwjgl.opengl.GL11.glDrawElements;
 import static org.lwjgl.opengl.GL11.glEnable;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
+import java.util.List;
+import java.util.ArrayList;
 
 import com.voxel.Shader;
 import com.voxel.enums.BlockType;
 import com.voxel.Chunk;
 import com.voxel.Camera;
+import com.voxel.World; 
 
 public class Main {
     // The window "handle" GLFW gives us a long id, not an object. Flyweight-ish:
@@ -34,8 +38,8 @@ public class Main {
 
     private Window window;
     private Shader shader;
-    private Mesh mesh;
     private Camera camera;
+    private World world;
 
     public void run() {
         init(1280, 720);
@@ -55,6 +59,7 @@ public class Main {
         GL.createCapabilities();
         glfwSwapInterval(1); // v-sync: cap to monitor refresh rate
 
+        /*
         float vertices[] = {
             // positions         // colors
             -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
@@ -87,6 +92,7 @@ public class Main {
             7, 6, 3,
             3, 2, 6
         };
+        */
 
         // location = 0 is like a conveyer belt saying I live here
         // gl_Position is the final vertex position, the code below is saying
@@ -121,8 +127,8 @@ public class Main {
                 }
                 """;
 
+        this.world = new World(5);
         this.shader = new Shader(vertexShaderSource, fragmentShaderSource, this.window);
-        this.mesh = new Mesh(vertices, indices);
         this.camera = new Camera(shader.shaderId);
 
         glfwShowWindow(window.window);
@@ -134,7 +140,6 @@ public class Main {
         glClearColor(0.45f, 0.62f, 0.92f, 1.0f);
         // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); wireframe mode
         glEnable(GL_DEPTH_TEST);
-
 
         float deltaTime = 0.0f;
         float lastFrame = 0.0f;
@@ -217,9 +222,9 @@ public class Main {
                 camera.cameraPos.fma(-(deltaTime * camera.cameraSpeed), cross);
             }
 
-            glBindVertexArray(mesh.VAO);
-            // glDrawArrays(GL_TRIANGLES, 0, 3); // Says to draw 3 veritices, independent from a vertex having 3 positions
-            
+            world.render(shader.model);
+
+            /*
             for(int x = 0; x < chunk.W; x++) {
                 for(int y = 0; y < chunk.H; y++) {
                     for(int z = 0; z < chunk.W; z++) {
@@ -233,6 +238,7 @@ public class Main {
                     }
                 }
             }
+            */
 
             camera.moveCamera(time);
         

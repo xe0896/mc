@@ -27,7 +27,7 @@ public class Camera {
     
     public Camera(int shaderId) {
         this.shaderId = shaderId;
-        this.cameraPos = new Vector3f(0, 0, 3);
+        this.cameraPos = new Vector3f(0, 15, 3);
         this.target = new Vector3f(0, 0, -1); // looking at origin
         this.up = new Vector3f(0, 1, 0); // where is up? normally its y-direction (direction vector)
     }
