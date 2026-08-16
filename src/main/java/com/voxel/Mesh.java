@@ -17,9 +17,11 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public class Mesh {
     public int VAO;
     public int vertexCount;
+    public int indicesCount;
 
     public Mesh(float[] vertices, int[] indices) {
         this.vertexCount = vertices.length / 6;
+        this.indicesCount = indices.length;
         this.VAO = glGenVertexArrays();
         glBindVertexArray(this.VAO); // Tracks EBO and VBO
 
@@ -38,7 +40,7 @@ public class Mesh {
         GL_DYNAMIC_DRAW: the data is changed a lot and used many times. */
 
         glBufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW); // Provides the data to VBO
-        //glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
 
         glBindVertexArray(VAO); // VAO must read the next two lines to store it
 

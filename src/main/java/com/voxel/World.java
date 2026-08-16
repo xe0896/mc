@@ -36,6 +36,17 @@ public class World {
         }
     }
 
+    public void printVertexCount() {
+        int vertexCount = 0;
+        for(int i = 0; i < N; i++) {
+            for(int j = 0; j < N; j++) {
+                Chunk c = chunks[i][j];
+                vertexCount += c.mesh.vertexCount;
+            }
+        }
+        System.out.println("Vertex count: " + vertexCount);
+    }
+
     public Chunk getChunk(int cx, int cz) {
         if(cx < 0 || cz < 0 || cx >= N|| cz >= N) return null;
         return chunks[cx][cz];
@@ -49,6 +60,7 @@ public class World {
         Chunk c = this.getChunk(cx, cz);
         if(c == null) return BlockType.AIR; // Outside the chunks so return AIR
 
+        // wx = cx * 16 + localX
         int lx = Math.floorMod(wx, Chunk.W);
         int lz = Math.floorMod(wz, Chunk.D);
         return c.getBlock(lx, wy, lz);

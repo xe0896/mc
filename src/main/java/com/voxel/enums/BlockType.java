@@ -2,5 +2,7 @@ package com.voxel.enums;
 
 public enum BlockType {
     AIR,
-    STONE
+    STONE,
+    GRASS,
+    DIRT
 }

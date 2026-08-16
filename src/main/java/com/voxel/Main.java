@@ -177,9 +177,9 @@ public class Main {
             newTarget.z = (float) Math.sin(Math.toRadians(camera.yaw)) * length;
             newTarget.normalize();
             camera.target = newTarget;
-        });  
+        });
 
-        glfwSetInputMode(window.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
+        glfwSetInputMode(window.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         
         // Game loop
         while (!glfwWindowShouldClose(window.window)) {
