@@ -41,6 +41,8 @@ public class Main {
     private Camera camera;
     private World world;
 
+    private static final float GRAVITY = 9.8f;
+
     public void run() {
         init(1280, 720);
         loop();
@@ -144,6 +146,8 @@ public class Main {
         float deltaTime = 0.0f;
         float lastFrame = 0.0f;
 
+        int velocityY = 0;
+
         glfwSetCursorPosCallback(window.window, (window, xPos, yPos) -> {
             if (camera.firstMouse) {
                 camera.lastX = (float) xPos;
@@ -240,6 +244,8 @@ public class Main {
             }
             */
 
+            velocityY -= GRAVITY * deltaTime;
+            camera.cameraPos.y += velocityY * deltaTime;
             camera.moveCamera(time);
         
             // Swap the buffer we drew to onto the screen (double buffering)
