@@ -16,14 +16,29 @@ import com.voxel.enums.BlockType;
 
 public class Chunk {
     public static final int W = 16;
-    public static final int H = 64;
+    public static final int H = 256;
     public static final int D = 16;
+
+    public static final float SCALE = 0.01f;
+    public static final int AMPLITUDE = 100;
+    public static final int BASE = 50;
+
     private static final BlockType[] values = BlockType.values();
+    private final Noise noise;
     public final int chunkX;
     public final int chunkZ;
     private Vector3f pos;
     public final byte[] chunk;
     public Mesh mesh;
+
+    private static final float[] SHADE = {
+        0.6f,  // 0 +Z front
+        0.6f,  // 1 -Z back
+        0.8f,  // 2 -X left
+        0.8f,  // 3 +X right
+        1.0f,  // 4 +Y top
+        0.5f   // 5 -Y bottom
+    };
 
     // Index order must match NORMALS below: 0=+Z, 1=-Z, 2=-X, 3=+X, 4=+Y, 5=-Y
     private static final float[][] FACES = {
@@ -83,7 +98,8 @@ public class Chunk {
 
     private static final float[][] FACE_COLORS = { {0,0,0}, {0.625f,0.625f,0.625f}, {0,1,0}, {0.4f,0.2f,0} };
 
-    public Chunk(int chunkX, int chunkZ) {
+    public Chunk(int chunkX, int chunkZ, Noise noise) {
+        this.noise = noise;
         this.chunkX = chunkX;
         this.chunkZ = chunkZ;
         pos = new Vector3f(chunkX * W, 0, chunkZ * D);
@@ -112,12 +128,33 @@ public class Chunk {
         }
     }
 
+    public void generate() {
+        for(int x = 0; x < W; x++) {
+            for(int z = 0; z < D; z++) {
+                int wx = chunkX * W + x;
+                int wz = chunkZ * D + z;
+
+                int height = noise.height(wx, SCALE, wz, AMPLITUDE, BASE);
+
+                for(int y = 0; y < height; y++) {
+                     if(y == height - 1) {
+                        this.setBlock(x,y,z, BlockType.GRASS);
+                    } else if (y < height - 4) {
+                        this.setBlock(x,y,z, BlockType.STONE);
+                    } else {
+                        this.setBlock(x,y,z, BlockType.DIRT);
+                    }
+                }
+            }
+        }
+    }
+
     public void render(int shaderId) {
         glBindVertexArray(mesh.VAO);
         // glDrawArrays(GL_TRIANGLES, 0, 3); // Says to draw 3 veritices, independent from a vertex having 3 positions
 
         Matrix4f translate = new Matrix4f().translate(pos); // identity matrix then apply translation
-                    
+
         Shader.setMatrix4(shaderId, translate);
         glDrawElements(GL_TRIANGLES, mesh.indicesCount, GL_UNSIGNED_INT, 0);
     }
@@ -143,8 +180,6 @@ public class Chunk {
     public void setBlock(int x, int y, int z, BlockType type) {
         int enumInt = type.ordinal();
 
-        System.out.println(enumInt);
-
         int idx = this.index(x, y, z);
 
         this.chunk[idx] = (byte) enumInt;
@@ -166,8 +201,6 @@ public class Chunk {
                         //if(getBlock(x + n[0], y + n[1], z + n[2]) != BlockType.AIR) continue;
                         if(world.getBlock(chunkX*W + x + n[0], y + n[1], chunkZ*D + z + n[2]) != BlockType.AIR) continue;
 
-                        
-
                         float[] verts = FACES[f];
                         float[] colors = FACE_COLORS[type.ordinal()];
 
@@ -177,7 +210,7 @@ public class Chunk {
                             survivors.add(verts[v*3] + x);
                             survivors.add(verts[v*3+1] + y);
                             survivors.add(verts[v*3+2] + z);
-                            survivors.add(colors[0]); survivors.add(colors[1]); survivors.add(colors[2]);
+                            survivors.add(colors[0] * SHADE[f]); survivors.add(colors[1] * SHADE[f]); survivors.add(colors[2] * SHADE[f]);
                         }
                         int base = faceCount * 4;
                         indices.add(base + 0);

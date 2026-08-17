@@ -10,7 +10,7 @@ import com.voxel.Shader;
 public class Camera {
 
     private final float radius = 10.0f;
-    public final float cameraSpeed = 5.0f;
+    public final float cameraSpeed = 100.0f;
     public float lastX = 400;
     public float lastY = 300;
     public float sensitivity = 0.1f;

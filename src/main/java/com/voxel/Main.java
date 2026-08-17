@@ -127,7 +127,7 @@ public class Main {
                 }
                 """;
 
-        this.world = new World(5);
+        this.world = new World(50);
         this.shader = new Shader(vertexShaderSource, fragmentShaderSource, this.window);
         this.camera = new Camera(shader.shaderId);
 

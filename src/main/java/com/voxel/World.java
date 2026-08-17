@@ -1,20 +1,25 @@
 package com.voxel;
 
 import com.voxel.enums.BlockType;
-import com.voxel.Chunk;
+
+import java.time.LocalDate;
+import com.voxel.Noise;
 
 public class World {
     private Chunk[][] chunks;
+    private final Noise noise;
     private final int N;
 
     public World(int N) {
         this.N = N;
+        this.noise = new Noise(LocalDate.now().toEpochDay());
         this.chunks = new Chunk[N][N];
         
         for(int cx = 0; cx < N; cx++) {
             for(int cz = 0; cz < N; cz++) {
-                Chunk c = new Chunk(cx, cz);
-                c.flat();
+                Chunk c = new Chunk(cx, cz, noise);
+                //c.flat();
+                c.generate();
                 chunks[cx][cz] = c;
             }
         }
