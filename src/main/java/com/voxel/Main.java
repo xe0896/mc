@@ -38,10 +38,8 @@ public class Main {
 
     private Window window;
     private Shader shader;
-    private Camera camera;
+    private Player player;
     private World world;
-
-    private static final float GRAVITY = 9.8f;
 
     public void run() {
         init(1280, 720);
@@ -131,7 +129,7 @@ public class Main {
 
         this.world = new World(50);
         this.shader = new Shader(vertexShaderSource, fragmentShaderSource, this.window);
-        this.camera = new Camera(shader.shaderId);
+        this.player = new Player(shader.shaderId);
 
         glfwShowWindow(window.window);
     }
@@ -146,42 +144,7 @@ public class Main {
         float deltaTime = 0.0f;
         float lastFrame = 0.0f;
 
-        int velocityY = 0;
-
-        glfwSetCursorPosCallback(window.window, (window, xPos, yPos) -> {
-            if (camera.firstMouse) {
-                camera.lastX = (float) xPos;
-                camera.lastY = (float) yPos;
-                camera.firstMouse = false;
-            }
-            float xoffset = (float) xPos - camera.lastX;
-            float yoffset = camera.lastY - (float) yPos;
-
-            camera.lastX = (float) xPos;
-            camera.lastY = (float) yPos;
-
-            xoffset *= camera.sensitivity;  
-            yoffset *= camera.sensitivity;
-
-            camera.pitch += yoffset;
-            camera.yaw += xoffset;
-
-            if(camera.pitch > 89.0f) {
-                camera.pitch = 89.0f;
-            }
-            if(camera.pitch < -89.0f) {
-                camera.pitch = -89.0f;
-            }
-
-            Vector3f newTarget = new Vector3f();
-            float length = (float) Math.cos(Math.toRadians(camera.pitch));
-
-            newTarget.x = (float) Math.cos(Math.toRadians(camera.yaw)) * length;
-            newTarget.y = (float) Math.sin(Math.toRadians(camera.pitch));
-            newTarget.z = (float) Math.sin(Math.toRadians(camera.yaw)) * length;
-            newTarget.normalize();
-            camera.target = newTarget;
-        });
+        player.camera.input(window.window);
 
         glfwSetInputMode(window.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         
@@ -202,30 +165,7 @@ public class Main {
             deltaTime = time - lastFrame;
             lastFrame = time;
 
-            // FMA is doing camera.cameraPos += (deltaTime * camera.cameraSpeed) * camera.target;
-            // this = this + a * b;
-            if (glfwGetKey(window.window, GLFW_KEY_W) == GLFW_PRESS) {
-                camera.cameraPos.fma(deltaTime * camera.cameraSpeed, camera.target);
-            }
-            if (glfwGetKey(window.window, GLFW_KEY_S) == GLFW_PRESS) {
-                camera.cameraPos.fma(-(deltaTime * camera.cameraSpeed), camera.target);
-            }
-            if (glfwGetKey(window.window, GLFW_KEY_D) == GLFW_PRESS) {
-                Vector3f target = new Vector3f(camera.target);
-                Vector3f up = new Vector3f(camera.up);
-                Vector3f cross = target.cross(up);
-                cross.normalize();
-                camera.cameraPos.fma(deltaTime * camera.cameraSpeed, cross);
-            }
-
-            if (glfwGetKey(window.window, GLFW_KEY_A) == GLFW_PRESS) {
-                Vector3f target = new Vector3f(camera.target);
-                Vector3f up = new Vector3f(camera.up);
-                Vector3f cross = target.cross(up);
-                cross.normalize();
-                camera.cameraPos.fma(-(deltaTime * camera.cameraSpeed), cross);
-            }
-
+            player.camera.keyInput(deltaTime, window.window);
             world.render(shader.model);
 
             /*
@@ -244,9 +184,8 @@ public class Main {
             }
             */
 
-            velocityY -= GRAVITY * deltaTime;
-            camera.cameraPos.y += velocityY * deltaTime;
-            camera.moveCamera(time);
+            player.apply(deltaTime, time);
+            player.windowToPlayer(window);
         
             // Swap the buffer we drew to onto the screen (double buffering)
             glfwSwapBuffers(window.window);

@@ -2,6 +2,10 @@ package com.voxel;
 
 import static org.lwjgl.opengl.GL20.glGetUniformLocation;
 
+import java.time.LocalDate;
+
+import static org.lwjgl.glfw.GLFW.*;
+
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -22,6 +26,10 @@ public class Camera {
     public float yaw = -90;
     public float pitch;
     public boolean firstMouse = true;
+
+    public boolean fly = false;
+    public boolean spaceWasDown = false;
+    public double time = glfwGetTime();
     
     private int shaderId;
     
@@ -49,5 +57,80 @@ public class Camera {
         Vector3f center = new Vector3f(cameraPos).add(target);
         Matrix4f cameraTransform = new Matrix4f().lookAt(cameraPos, center, up);
         Shader.setMatrix4(glGetUniformLocation(shaderId, "view"), cameraTransform);
+    }
+
+    public void keyInput(float deltaTime, long window) {
+         // FMA is doing camera.cameraPos += (deltaTime * camera.cameraSpeed) * camera.target;
+        // this = this + a * b;
+
+        Vector3f cross = new Vector3f(target).cross(new Vector3f(up));
+        Vector3f forward = new Vector3f(target.x, 0, target.z).normalize();
+
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            cameraPos.fma(deltaTime * cameraSpeed, (fly ? target : forward));
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            cameraPos.fma(-(deltaTime * cameraSpeed), (fly ? target : forward));
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            Vector3f c = new Vector3f(cross);
+            c.normalize();
+            cameraPos.fma(deltaTime * cameraSpeed, c);
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            Vector3f c = new Vector3f(cross);
+            c.normalize();
+            cameraPos.fma(-(deltaTime * cameraSpeed), c);
+        }
+
+        boolean isDown = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+
+        
+        if(isDown && !spaceWasDown) {
+            if(glfwGetTime() - 0.3f < time) {
+                fly = !fly;
+            }
+            time = glfwGetTime();
+        }
+        spaceWasDown = isDown; // Tracking isDown
+        
+    }
+
+    public void input(long _window) {
+        glfwSetCursorPosCallback(_window, (window, xPos, yPos) -> {
+            if (firstMouse) {
+                lastX = (float) xPos;
+                lastY = (float) yPos;
+                firstMouse = false;
+            }
+            float xoffset = (float) xPos - lastX;
+            float yoffset =  lastY - (float) yPos;
+
+            lastX = (float) xPos;
+            lastY = (float) yPos;
+
+            xoffset *=  sensitivity;  
+            yoffset *=  sensitivity;
+
+            pitch += yoffset;
+            yaw += xoffset;
+
+            if( pitch > 89.0f) {
+                 pitch = 89.0f;
+            }
+            if( pitch < -89.0f) {
+                 pitch = -89.0f;
+            }
+
+            Vector3f newTarget = new Vector3f();
+            float length = (float) Math.cos(Math.toRadians( pitch));
+
+            newTarget.x = (float) Math.cos(Math.toRadians( yaw)) * length;
+            newTarget.y = (float) Math.sin(Math.toRadians( pitch));
+            newTarget.z = (float) Math.sin(Math.toRadians( yaw)) * length;
+            newTarget.normalize();
+            target = newTarget;
+        });
     }
 }

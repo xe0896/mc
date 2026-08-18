@@ -63,4 +63,8 @@ public class Window {
             }
         }
     }
+
+    public void setTitle(String title) {
+        glfwSetWindowTitle(window, title);
+    }
 }
