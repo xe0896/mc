@@ -14,7 +14,7 @@ import com.voxel.Shader;
 public class Camera {
 
     private final float radius = 10.0f;
-    public final float cameraSpeed = 100.0f;
+    public float cameraSpeed = 9;
     public float lastX = 400;
     public float lastY = 300;
     public float sensitivity = 0.1f;
@@ -59,33 +59,17 @@ public class Camera {
         Shader.setMatrix4(glGetUniformLocation(shaderId, "view"), cameraTransform);
     }
 
-    public void keyInput(float deltaTime, long window) {
+    public Vector3f keyInput(float deltaTime, long window) {
          // FMA is doing camera.cameraPos += (deltaTime * camera.cameraSpeed) * camera.target;
         // this = this + a * b;
 
-        Vector3f cross = new Vector3f(target).cross(new Vector3f(up));
-        Vector3f forward = new Vector3f(target.x, 0, target.z).normalize();
+        Vector3f cross = new Vector3f(target).cross(new Vector3f(up)).normalize();
+        Vector3f noFly = new Vector3f(target.x, 0, target.z).normalize();
+        Vector3f flyVector = new Vector3f(0, 1, 0).normalize();
 
-
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            cameraPos.fma(deltaTime * cameraSpeed, (fly ? target : forward));
-        }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            cameraPos.fma(-(deltaTime * cameraSpeed), (fly ? target : forward));
-        }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            Vector3f c = new Vector3f(cross);
-            c.normalize();
-            cameraPos.fma(deltaTime * cameraSpeed, c);
-        }
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            Vector3f c = new Vector3f(cross);
-            c.normalize();
-            cameraPos.fma(-(deltaTime * cameraSpeed), c);
-        }
+        Vector3f delta = new Vector3f();
 
         boolean isDown = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
-
         
         if(isDown && !spaceWasDown) {
             if(glfwGetTime() - 0.3f < time) {
@@ -94,7 +78,24 @@ public class Camera {
             time = glfwGetTime();
         }
         spaceWasDown = isDown; // Tracking isDown
-        
+
+        if(fly && isDown) {
+            delta.fma(deltaTime * cameraSpeed, flyVector);
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            delta.fma(deltaTime * cameraSpeed, (fly ? target : noFly));
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            delta.fma(-(deltaTime * cameraSpeed), (fly ? target : noFly));
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            delta.fma(deltaTime * cameraSpeed, cross);
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            delta.fma(-(deltaTime * cameraSpeed), cross);
+        }
+        return delta;
     }
 
     public void input(long _window) {

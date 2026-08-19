@@ -129,7 +129,7 @@ public class Main {
 
         this.world = new World(50);
         this.shader = new Shader(vertexShaderSource, fragmentShaderSource, this.window);
-        this.player = new Player(shader.shaderId);
+        this.player = new Player(shader.shaderId, this.world);
 
         glfwShowWindow(window.window);
     }
@@ -165,7 +165,6 @@ public class Main {
             deltaTime = time - lastFrame;
             lastFrame = time;
 
-            player.camera.keyInput(deltaTime, window.window);
             world.render(shader.model);
 
             /*
@@ -184,7 +183,7 @@ public class Main {
             }
             */
 
-            player.apply(deltaTime, time);
+            player.apply(deltaTime, window.window, time);
             player.windowToPlayer(window);
         
             // Swap the buffer we drew to onto the screen (double buffering)
