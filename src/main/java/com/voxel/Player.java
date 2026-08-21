@@ -1,18 +1,25 @@
 package com.voxel;
 
+import static org.lwjgl.glfw.GLFW.*;
+
 import org.joml.Vector3f;
 import com.voxel.enums.BlockType;
 public class Player {
     public Camera camera;
     private World world;
-    private Vector3f position;
-    private Vector3f velocity;
 
     private static final float GRAVITY = 9.8f;
-    private static final float PLAYER_HEIGHT = 1.2f;
-    private final boolean onGround = false;
-
+    private static final float PLAYER_HEIGHT = 2;
     public float velocityY = 0;
+
+    public boolean fly = false;
+    public boolean spaceWasDown = false;
+    public double doubleTapFlyTime = glfwGetTime();
+    public double jumpTime = glfwGetTime();
+
+    public float jumpCooldown = 1.5f;
+    public float jumpSpeed = 5;
+    public float doubleTapFlyCd = 0.3f;
 
     public Player(int shaderId, World world) {
         //this.position = position;
@@ -35,7 +42,7 @@ public class Player {
 
     private boolean isGrounded() {
         float feet = camera.cameraPos.y - PLAYER_HEIGHT;
-        return solidAt(camera.cameraPos.x, feet - 1, camera.cameraPos.z);
+        return solidAt(camera.cameraPos.x, feet - 0.05f, camera.cameraPos.z);
     }
 
     // Fixing an error state, different to isGrounded() as that is just a check
@@ -48,7 +55,18 @@ public class Player {
 
     public void apply(float deltaTime, long window, float time) {
         // Several collides() calls as we want to use the new positions as we go along
-        Vector3f delta = camera.keyInput(deltaTime, window);
+        boolean isDown = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+        
+        if(isDown && !spaceWasDown) {
+            if(glfwGetTime() - doubleTapFlyCd < doubleTapFlyTime) {
+                fly = !fly;
+            }
+            doubleTapFlyTime = glfwGetTime();
+        }
+        
+        spaceWasDown = isDown; // Tracking isDown
+
+        Vector3f delta = camera.keyInput(deltaTime, window, fly, isDown);
 
         float oldX = camera.cameraPos.x;
         camera.cameraPos.x += delta.x;
@@ -58,21 +76,27 @@ public class Player {
         camera.cameraPos.z += delta.z;
         if(collides()) camera.cameraPos.z = oldZ;
 
-        // Apply gravity, double deltaTime as we integrate twice, one to update velocity; another for position
-        if(!camera.fly && !isGrounded()) {
-            if(position().y >= 10) {
-                velocityY -= GRAVITY * deltaTime;
-                camera.cameraPos.y += velocityY * deltaTime;
+        if(isGrounded() && !fly && isDown) {
+            if(glfwGetTime() - jumpCooldown > jumpTime) {
+                velocityY = jumpSpeed;
+                jumpTime = glfwGetTime();
             }
         }
+
+        // Apply gravity, double deltaTime as we integrate twice, one to update velocity; another for position
+        if(!fly) {
+            if(!isGrounded()) {
+                velocityY -= GRAVITY * deltaTime;
+                System.out.println("velocityY: " + velocityY);
+            }
+            camera.cameraPos.y += velocityY * deltaTime;
+        }
+
         
-        if(collides() && !camera.fly) {
+        if(collides() && !fly) {
             int by = (int) Math.floor(position().y);
             camera.cameraPos.y = by + 1 + PLAYER_HEIGHT;
             velocityY = 0;
-            System.out.println("Not airbourne");
-        } else {
-            System.out.println("Airbourne");
         }
 
         float oldY = camera.cameraPos.y;
@@ -81,7 +105,6 @@ public class Player {
 
         camera.moveCamera(time);
     }
-
 
     public void windowToPlayer(Window window) {
         Vector3f p = position();

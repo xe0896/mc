@@ -26,16 +26,12 @@ public class Camera {
     public float yaw = -90;
     public float pitch;
     public boolean firstMouse = true;
-
-    public boolean fly = false;
-    public boolean spaceWasDown = false;
-    public double time = glfwGetTime();
     
     private int shaderId;
     
     public Camera(int shaderId) {
         this.shaderId = shaderId;
-        this.cameraPos = new Vector3f(0, 15, 3);
+        this.cameraPos = new Vector3f(100, 100, 200);
         this.target = new Vector3f(0, 0, -1); // looking at origin
         this.up = new Vector3f(0, 1, 0); // where is up? normally its y-direction (direction vector)
     }
@@ -59,8 +55,8 @@ public class Camera {
         Shader.setMatrix4(glGetUniformLocation(shaderId, "view"), cameraTransform);
     }
 
-    public Vector3f keyInput(float deltaTime, long window) {
-         // FMA is doing camera.cameraPos += (deltaTime * camera.cameraSpeed) * camera.target;
+    public Vector3f keyInput(float deltaTime, long window, boolean fly, boolean isDown) {
+        // FMA is doing camera.cameraPos += (deltaTime * camera.cameraSpeed) * camera.target;
         // this = this + a * b;
 
         Vector3f cross = new Vector3f(target).cross(new Vector3f(up)).normalize();
@@ -68,16 +64,6 @@ public class Camera {
         Vector3f flyVector = new Vector3f(0, 1, 0).normalize();
 
         Vector3f delta = new Vector3f();
-
-        boolean isDown = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
-        
-        if(isDown && !spaceWasDown) {
-            if(glfwGetTime() - 0.3f < time) {
-                fly = !fly;
-            }
-            time = glfwGetTime();
-        }
-        spaceWasDown = isDown; // Tracking isDown
 
         if(fly && isDown) {
             delta.fma(deltaTime * cameraSpeed, flyVector);
@@ -95,6 +81,7 @@ public class Camera {
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
             delta.fma(-(deltaTime * cameraSpeed), cross);
         }
+
         return delta;
     }
 
