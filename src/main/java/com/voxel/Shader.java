@@ -50,7 +50,7 @@ public class Shader {
         // 45 degrees is the FOV
         // 0.1f is chosen as the near plane as zero would explode due to dividing by 0, 
         // causing us to make the view move the objects a few units back
-        Matrix4f projectionTransform = new Matrix4f().perspective((float) Math.toRadians(45), (float) window.width/window.height, 0.1f, 1000.0f);
+        Matrix4f projectionTransform = new Matrix4f().perspective((float) Math.toRadians(90), (float) window.width/window.height, 0.1f, 1000.0f);
         setMatrix4(glGetUniformLocation(shaderId, "projection"), projectionTransform);
 
         int successShaderLink = glGetProgrami(shaderId, GL_LINK_STATUS);

@@ -8,6 +8,7 @@ import static org.lwjgl.opengl.GL11.GL_UNSIGNED_INT;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.nio.ByteBuffer;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -159,9 +160,9 @@ public class Chunk {
         glDrawElements(GL_TRIANGLES, mesh.indicesCount, GL_UNSIGNED_INT, 0);
     }
 
-    public void buildMesh(World world) {
+    public void buildMesh(World world, Block block) {
         MeshData data = cull(world);
-        this.mesh = new Mesh(data.vertices(), data.indices());
+        this.mesh = new Mesh(data.vertices(), data.indices(), block);
     }
 
     // Given x,y,z coordinates; we go into our chunk and look at the byte stored at that

@@ -86,8 +86,12 @@ public class Player {
         // Apply gravity, double deltaTime as we integrate twice, one to update velocity; another for position
         if(!fly) {
             if(!isGrounded()) {
-                velocityY -= GRAVITY * deltaTime;
-                System.out.println("velocityY: " + velocityY);
+                if(position().y > -10) {
+                    velocityY -= GRAVITY * deltaTime;
+                } else {
+                    velocityY = 0;
+                    camera.cameraPos.y = 200;
+                }
             }
             camera.cameraPos.y += velocityY * deltaTime;
         }

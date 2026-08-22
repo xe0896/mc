@@ -1,7 +1,15 @@
 package com.voxel;
 
 import com.voxel.enums.BlockType;
+import static org.lwjgl.stb.STBImage.*;
 
+import java.nio.IntBuffer;
+import java.nio.ByteBuffer;
+
+import static org.lwjgl.system.MemoryStack.stackPush;
+
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.time.LocalDate;
 import com.voxel.Noise;
 
@@ -14,6 +22,23 @@ public class World {
         this.N = N;
         this.noise = new Noise(LocalDate.now().toEpochDay());
         this.chunks = new Chunk[N][N];
+
+        ByteBuffer buf;
+        IntBuffer width;
+        IntBuffer height;
+        IntBuffer channels_in_files;
+
+        try (var stack = stackPush()) {
+            // mallocInt says how many integers we want
+            width = stack.mallocInt(1);
+            height = stack.mallocInt(1);
+            channels_in_files = stack.mallocInt(32);
+            buf = stbi_load("src/main/resources/grass_block.jpg", width, height, channels_in_files, 3);
+        }
+
+        System.out.println(buf);
+
+        Block block = new Block(buf, width.get(), height.get(), channels_in_files.get());
         
         for(int cx = 0; cx < N; cx++) {
             for(int cz = 0; cz < N; cz++) {
@@ -27,7 +52,7 @@ public class World {
         for(int cx = 0; cx < N; cx++) {
             for(int cz = 0; cz < N; cz++) {
                 Chunk c = chunks[cx][cz];
-                c.buildMesh(this);
+                c.buildMesh(this, block);
             }
         }
     }
